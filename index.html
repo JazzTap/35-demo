@@ -1,0 +1,113 @@
+<html>
+<head>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+
+<body>
+<p id="tooltip">
+    I was a legend, but now I'm a tooltip! Hover over any observation for its information.
+</p>
+<svg width=600 height=170> </svg>
+<script>
+d3.csv("forage.csv").then((elements) => {
+  // console.log(elements)
+
+  d3.select('svg') // inject some styles
+    .append('defs')
+    .html(`
+    <pattern id="dither" patternUnits="userSpaceOnUse" width="10" height="10"> 
+        <line x1=-6 y1=12 x2=8 y2=-2 stroke="white" stroke-width=5></line>
+        <line x1=-4 y1=18 x2=10 y2=4 stroke="white" stroke-width=2></line>
+    </pattern>
+    <mask id="dither-mask">
+        <rect width="1000" height="1000" fill="url(#dither)" />
+    </mask>`)
+
+  let fill = { deer: '#5555aa', camel: '#aa5555'},
+    pattern = { water: '', brush: 'url(#dither-mask)' };
+
+  // infer spaces between bar groups
+  let kinds = [...new Set(elements.map(d => d.kind))], // unique kinds
+    wants = [...new Set(elements.map(d => d.want))]; // unique wants
+
+  let major = i =>
+      elements.filter(d => kinds.slice(0, i).includes(d.kind)).length * 10,
+      // i == 0 ? 0 : 30,
+    minor = (i, j) =>
+      elements.filter(
+        d => kinds[i] == d.kind && wants.slice(0, j).includes(d.want)
+      ).length * 10;
+
+  // prepare svg
+  let sel = d3
+    .select('svg')
+    .append('g')
+    .attr('transform', 'translate(55, 10)')
+
+  // define each bar group
+
+  console.log(kinds)
+  console.log(wants)
+  for (let i = 0; i < kinds.length; ++i) {
+    for (let j = 0; j < wants.length; ++j) {
+      console.log(major(i), minor(i, j));
+
+      let group = elements
+        .filter(d => d.kind == kinds[i] && d.want == wants[j])
+        // .sort((l, r) => r.amount - l.amount);
+      console.log(group)
+
+      sel
+        .selectAll(`rect.${kinds[i]}.${wants[j]}`)
+        .data(group)
+        .join('rect')
+        .attr('class', `${kinds[i]} ${wants[j]}`)
+        .attr('x', 10)
+        .attr('y', (d, k) => major(i) + 10 * i + minor(i, j) + 5 * j + 10 * k)
+        .attr('width', d => d.amount * 10)
+        .attr('height', 5)
+        .attr('fill', d => fill[d.kind])
+        .attr('mask', d => pattern[d.want])
+        .on('mouseover', function(e, d) {
+            d3.select('#tooltip').text(JSON.stringify(d))
+        });
+
+    // x extent of this group: Math.max(...group.map(d => d.amount * 10)) + 15
+      if ( j == 0) {
+        sel
+        .  append('text')
+          .attr('transform', d => `translate(-10, ${
+            major(i) + 10 * i + minor(i, j) + 5 * j + 5
+      })`)
+          .text(kinds[i])
+          .attr('text-anchor', 'end');
+      }
+      sel
+        .append('text')
+        .attr('transform', d => `translate(0, ${
+            major(i) + 10 * i + minor(i, j) + 5 * j + (j == 0 ? 15 : 10)
+    })`)
+        .text(wants[j])
+        .attr('font-size', 'smaller')
+        .attr('text-anchor', 'end');
+    }
+  }
+
+  // shared axis
+  sel
+    .append('g')
+    .attr('transform', `translate(10, ${
+        elements.length*10 + kinds.length*10})`)
+    .call(
+      d3.axisBottom(
+        d3
+          .scaleLinear()
+          .domain([0, 40])
+          .range([0, 400])
+      )
+    );
+})
+</script>
+
+</body>
+</html>

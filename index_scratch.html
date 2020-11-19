@@ -1,0 +1,51 @@
+<html>
+<head>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+
+<body>
+<p>
+    <span style="color: #5555aa;">dogs</span> and <span style="color: #aa5555;">cats</span>
+</p>
+<svg width=400 height=130> </svg>
+<script>
+d3.csv("pets.csv").then((elements) => {
+    let x = { Sunday: 60, Monday: 160, Tuesday: 260 },
+        y = (cute) => cute > 5 ? 20 : 80
+    fill = { dog: '#5555aa', cat: '#aa5555' };
+
+  let sel = d3.select('svg')
+  sel
+    .selectAll('circle')
+    .data(elements)
+    .join('circle')
+    .attr('cx', (d,i) => x[d.Day] + i*5)
+    // hack: don't draw directly on top of each other
+    .attr('cy', d => y(d.Cuteness))
+    .attr('r', 10)
+    .style('fill', d => fill[d.Type])
+    .style('opacity', .8)
+
+  // x axis labels
+  // get all unique values of Day
+  let labels = [...new Set(elements.map(d => d.Day))];
+  sel.append('g')
+    .selectAll('text')
+    .data(labels)
+    .join('text')
+    .attr('x', d => x[d])
+    .attr('y', 120)
+    .text(d => d)
+    .style('text-anchor', 'middle');
+
+  // y axis labels
+  sel.append('text')
+    .attr('transform', 'translate(10, 100) rotate(-90)')
+    .attr('x', 0).attr('y', 0)
+    .text('cute     v. cute')
+    .style('white-space', 'pre') // don't consume whitespace
+})
+</script>
+
+</body>
+</html>
